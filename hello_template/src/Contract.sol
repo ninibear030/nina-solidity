@@ -6,6 +6,7 @@ import {IBToken} from "./interfaces/IBToken.sol";
 import {IRewardsModule, Cosmos} from "./interfaces/IRewards.sol";
 
 import {Script, console2} from "forge-std/Script.sol";
+import "forge-std/console.sol";
 
 contract Contract is Script {
     ILendRewardsAggregator lendRewardsAggregator;
@@ -73,6 +74,7 @@ contract Contract is Script {
 
     function test() external view {
         console2.log("testtest");
+        console.log("%s:%s", "foo");
     }
 
     function claimAllRewards(
@@ -93,79 +95,86 @@ contract Contract is Script {
         //         }
         //     }
         // }
-        console2.logString("FFFFF");
 
-        for (uint256 i = 0; i < dexPoolAddresses.length; i++) {
-            (bool success, bytes memory data) = AbgtRewarder.delegatecall(
-                abi.encodeWithSelector(
-                    rewardsModule.getCurrentRewards.selector,
-                    _receiver,
-                    dexPoolAddresses[i]
-                )
-            );
-            console.log("%s", "FFFFF");
-            console.log("%s", "FFFFF");
+        // for (uint256 i = 0; i < dexPoolAddresses.length; i++) {
+        //     (bool success, bytes memory data) = AbgtRewarder.delegatecall(
+        //         abi.encodeWithSelector(
+        //             rewardsModule.getCurrentRewards.selector,
+        //             _receiver,
+        //             dexPoolAddresses[i]
+        //         )
+        //     );
+        //     console2.log("bytes");
+        //     console2.logBool(success);
+        //     console2.logBytes(data);
 
-            if (success && data.length > 0) {
-                Cosmos.Coin[] memory rewards = abi.decode(
-                    data,
-                    (Cosmos.Coin[])
-                );
-                console.log("%s", "FFFFF");
-                console.log("%s", "FFFFF");
-                console.log("%s", "FFFFF");
-
-                if (rewards.length > 0 && rewards[0].amount > 0) {
-                    console.log("%s", "FFFFF");
-                    console.log("%s", "FFFFF");
-                    console.log("%s", "FFFFF");
-                    console.log("%s", "FFFFF");
-                    (bool success2, bytes memory returnData) = AbgtRewarder
-                        .delegatecall(
-                            abi.encodeWithSelector(
-                                rewardsModule
-                                    .withdrawAllDepositorRewards
-                                    .selector,
-                                dexPoolAddresses[i]
-                            )
-                        );
-                    if (success2 == false) {
-                        if (returnData.length > 0) {
-                            assembly {
-                                let returndata_size := mload(returnData)
-                                revert(add(32, returnData), returndata_size)
-                            }
-                        } else {
-                            revert("Function call reverted");
-                        }
-                    }
-                }
-            }
-        }
-
-        // uint256 lendAvailableBalance = lendRewardsAggregator.getAllRewards(_receiver);
-        // if (lendAvailableBalance > 0) {
-        //     (bool success, bytes memory data) = AlendRewardsAggregator
-        //         .delegatecall(
-        //             abi.encodeWithSelector(
-        //                 lendRewardsAggregator.claimAllRewards.selector,
-        //                 _receiver
-        //             )
-        //         );
-        //    if (success == false) {
-        //         if (data.length > 0) {
-        //             assembly {
-        //                 let returndata_size := mload(data)
-        //                 revert(add(32, data), returndata_size)
+        //     if (success && data.length > 0) {
+        //         Cosmos.Coin[] memory rewards = abi.decode(data,(Cosmos.Coin[]));
+        //         if (rewards.length > 0 && rewards[0].amount > 0) {
+        //             (bool success2, bytes memory returnData) = AbgtRewarder
+        //                 .delegatecall(
+        //                     abi.encodeWithSelector(
+        //                         rewardsModule
+        //                             .withdrawAllDepositorRewards
+        //                             .selector,
+        //                         dexPoolAddresses[i]
+        //                     )
+        //                 );
+        //             if (success2 == false) {
+        //                 if (returnData.length > 0) {
+        //                     assembly {
+        //                         let returndata_size := mload(returnData)
+        //                         revert(add(32, returnData), returndata_size)
+        //                     }
+        //                 } else {
+        //                     revert("Function call reverted??");
+        //                 }
         //             }
-        //         } else {
-        //             revert("Function call reverted");
         //         }
         //     }
         // }
 
-        // uint256 perpsAvailableBalance = perpsRewarder.pendingBGT(_receiver);
-        // if (perpsAvailableBalance > 0)
-        //     perpsRewarder.claimBGT(perpsAvailableBalance, _receiver);
+        uint256 lendAvailableBalance = lendRewardsAggregator.getAllRewards(_receiver);
+        if (lendAvailableBalance > 0) {
+            (bool success, bytes memory data) = AlendRewardsAggregator
+                .delegatecall(
+                    abi.encodeWithSelector(
+                        lendRewardsAggregator.claimAllRewards.selector,
+                        _receiver
+                    )
+                );
+           if (success == false) {
+                if (data.length > 0) {
+                    assembly {
+                        let returndata_size := mload(data)
+                        revert(add(32, data), returndata_size)
+                    }
+                } else {
+                    revert("Bend claim rewards function call reverted");
+                }
+            }
+        }
+
+        uint256 perpsAvailableBalance = perpsRewarder.pendingBGT(_receiver);
+        if (perpsAvailableBalance > 0) {
+            (bool success, bytes memory data) = AperpsRewarder
+                .delegatecall(
+                    abi.encodeWithSelector(
+                        perpsRewarder.claimBGT.selector,
+                        perpsAvailableBalance,
+                        _receiver
+                    )
+                );
+           if (success == false) {
+                if (data.length > 0) {
+                    assembly {
+                        let returndata_size := mload(data)
+                        revert(add(32, data), returndata_size)
+                    }
+                } else {
+                    revert("perps claim rewards function call reverted");
+                }
+            }
+        }
     }
 }
